@@ -8,4 +8,5 @@ services:
         - 5001:5001
     volumes:
       - ..:/workspaces/webtech
-    command: /bin/bash -c "pip install -r requirements.txt"
+    # Crashes the codespace. 
+    #command: /bin/bash -c "pip install -r requirements.txt"
