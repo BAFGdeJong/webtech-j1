@@ -1,0 +1,10 @@
+services:
+  dev:
+    image: python:slim-bookworm
+    stdin_open: true
+    command: sleep infinity
+    user: root
+    ports:
+        - 5001:5001
+    volumes:
+      - ..:/workspaces/webtech

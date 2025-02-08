@@ -1,0 +1,24 @@
+{
+    "name": "Webtech",
+    // // Can be uncommented to use the compose.yaml and build instead of pull.
+    "dockerComposeFile": "compose.yaml",
+    "service": "dev",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/webtech,type=bind",
+    "workspaceFolder": "/workspaces/webtech",
+    "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "KevinRose.vsc-python-indent",
+        "usernamehw.errorlens"
+    ],
+    // // Enables using docker inside the container (Docker in docker)
+    // "features": {
+    //     "ghcr.dockerproxy.com/devcontainers/features/docker-in-docker:2": {}
+    // },
+    "forwardPorts": [5001],
+    "postCreateCommand": { 
+        "bash -i pip install -r /workspaces/webtech/requirements.txt": "",
+        "bash -i apt-get update && apt-get install -y sqlite3 npm git": ""
+    },
+    "postStartCommand": ["apt update"]
+}
