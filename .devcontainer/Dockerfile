@@ -1,7 +1,6 @@
 FROM python:slim-bookworm
 
 WORKDIR /
-COPY . .
 
 RUN apt update && apt-get update && apt-get install -y sqlite3 npm git
 

@@ -9,7 +9,8 @@
         "ms-python.python",
         "ms-python.debugpy",
         "KevinRose.vsc-python-indent",
-        "usernamehw.errorlens"
+        "usernamehw.errorlens",
+        "qwtel.sqlite-viewer"
     ],
     // // Enables using docker inside the container (Docker in docker)
     // "features": {
