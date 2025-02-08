@@ -15,10 +15,5 @@
     // "features": {
     //     "ghcr.dockerproxy.com/devcontainers/features/docker-in-docker:2": {}
     // },
-    "forwardPorts": [5001],
-    "postCreateCommand": { 
-        "bash -i pip install -r /workspaces/webtech/requirements.txt": "",
-        "bash -i apt-get update && apt-get install -y sqlite3 npm git": ""
-    },
-    "postStartCommand": ["apt update"]
+    "forwardPorts": [5001]
 }

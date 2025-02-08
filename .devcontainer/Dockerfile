@@ -3,7 +3,11 @@ FROM python:slim-bookworm
 WORKDIR /
 COPY . .
 
-RUN mkdir -p /workspaces/webtech
+RUN apt update && apt-get update && apt-get install -y sqlite3 npm git
+
+RUN useradd -ms /bin/bash vscode
+
+USER vscode
 WORKDIR /workspaces/webtech
 
 EXPOSE 5001
