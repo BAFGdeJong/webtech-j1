@@ -46,35 +46,31 @@ class DbPath():
 
 class DbConn():
     def __init__(self, path, id):
+        self._db_path = path
         self._conn_id = id
         self._connection = sqlite3.connect(path)
-        self._cursors = []
-        self._in_use = False
+        self._available = True
         self._connection_alive = True
     
     def is_available(self):
-        return self._in_use
+        return self._available
     
     def is_connection_alive(self):
         return self._connection_alive
     
     def get_cursor(self):
-        x = self._connection.cursor()
-        self._cursors.append(id(x))
-        return x
+        return self._connection.cursor()
     
-    def close_cursor(self, cursor):
-        if id(cursor) in self._cursors:
-            cursor.close()
-        else:
-            raise
+    def commit(self):
+        self._connection.commit()
     
-    def set_connection(self, path):
-        self._in_use = True
-        self.close_connection()
-        self._connection = sqlite3.connect(path)
-        self._in_use = False
-        
+    def open_connection(self):
+        self._available = True
+        return self._connection
+    
+    def close_connection(self):
+        self._available = False
+    
     def set_id(self, id: int):
         self._conn_id = id
         
@@ -82,18 +78,16 @@ class DbConn():
         return self._conn_id
 
     def forcefully_close(self):
-        self._in_use = True
+        self._available = False
         self._connection.close()
         self._connection_alive = False
-        self._in_use = False
-
 
 class DbPool():
     def __init__(self, path, connection_limit):
         self._path = path
         self._connection_limit = connection_limit
         self._pool = {}
-        self._add_to_pool(path, connection_limit)
+        self._add_to_pool(connection_limit) # id: DbConn
         
     def _add_to_pool(self, amount):
         for x in range(len(self._pool), amount):
@@ -106,6 +100,17 @@ class DbPool():
             temp = self._pool.pop(x)
             temp.forcefully_close()
     
+    def _clear_pool(self):
+        self._pool.clear()
+    
+    def get_connection(self):
+        for x, y in zip(self._pool.keys(), self._pool.values()):
+            if y.is_available:
+                return { x: y }
+    
+    def close_connection(self, connection: dict):
+        self._pool.get(list(connection.keys())[0]).close_connection() # Improve later
+    
     def set_connection_limit(self, new_limit: int):
         if new_limit == self._connection_limit:
             return
@@ -116,38 +121,30 @@ class DbPool():
             self._remove_from_pool(self, new_limit)
         
         self._connection_limit = new_limit
-            
     
-
-    # def create_connection(self):
-    #     try: 
-    #         temp = self._add_to_pool()
-    #         return {'id': temp, 'connection': self._pool.get(temp)}
-    #     except Exception as e:
-    #         raise e
-    
-    # def close_connection(self, connection: dict):
-    #     try:
-    #         self._remove_from_pool(connection.get('id'))
-    #         return
-    #     except Exception as e:
-    #         raise e
-    
-    # def _get_id_and_pop(self) -> int:
-    #     return (self._poss_ids[-1], self._poss_ids.pop())[0]
-    
-    # def _return_id_to_list(self, id_to_ret_to_list):
-    #     self._poss_ids.append(id_to_ret_to_list)
-    
-    # def reset_pool(self):
-    #     for x in self._pool.values():
-    #         x.disconnect()
-    #     self._pool.clear()
-    #     self._poss_ids = [x for x in reversed(range(self._connection_limit))]
+    def reset_pool(self):
+        for x in self._pool.values():
+            x.forcefully_close()
+        self._clear_pool()
+        self._add_to_pool(self._connection_limit)
 
 class Db:    
     def __init__(self, database_name: str, connection_limit: int = 100):
         self.pool = DbPool(DbPath(database_name).path, connection_limit)
+
+    def add_user(self, email: str, first_name: str):
+        db = self.pool.get_connection()
+        conn: DbConn = list(db.values())[0] # Needs to be improved
+        curs = conn.get_cursor()
+        
+        try:
+            curs.execute("INSERT INTO users (email, first_name) VALUES (?, ?)", (email, first_name))
+        except Exception as e:
+            print(e)
+        
+        curs.close()
+        conn.commit()
+        self.pool.close_connection(db)
 
     def create_tables(self, tables_to_create: dict):
         """
@@ -170,15 +167,12 @@ class Db:
         Ouput: 
             void, creates the requested table in the database.
         """
-        try:
-            connection = self.pool.create_connection()
-            conn: DbConn = connection.get('connection')
-        except Exception as e:
-            raise e
+        connection = self.pool.get_connection()
+        conn = list(connection.values())[0]
         
-        curs = conn.connection.cursor()
+        curs = conn.get_cursor()
         
-        what = columns_and_constraints.__repr__().replace('[', '').replace(']', '')
+        what = columns_and_constraints.__repr__().replace('[', '').replace(']', '').replace("'", '')
         try:
             curs.execute(f"CREATE TABLE {table_name} ({what})")
         except Exception as e:
